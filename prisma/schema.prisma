@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model clientes {
+  id_cliente     Int       @id @default(autoincrement())
+  nombre_cliente String?   @db.VarChar(50)
+  direccion      String?   @db.VarChar(100)
+  telefono       String?   @db.VarChar(20)
+  email          String?   @db.VarChar(50)
+  pedidos        pedidos[]
+}
+
+model detalle_pedidos {
+  id_detalle  Int        @id @default(autoincrement())
+  id_pedido   Int?
+  id_producto Int?
+  cantidad    Int?
+  pedidos     pedidos?   @relation(fields: [id_pedido], references: [id_pedido], onDelete: NoAction, onUpdate: NoAction, map: "detalle_pedidos_ibfk_1")
+  productos   productos? @relation(fields: [id_producto], references: [id_producto], onDelete: NoAction, onUpdate: NoAction, map: "detalle_pedidos_ibfk_2")
+
+  @@index([id_pedido], map: "id_pedido")
+  @@index([id_producto], map: "id_producto")
+}
+
+model pedidos {
+  id_pedido       Int               @id @default(autoincrement())
+  id_cliente      Int?
+  fecha_pedido    DateTime?         @db.Date
+  detalle_pedidos detalle_pedidos[]
+  clientes        clientes?         @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "pedidos_ibfk_1")
+
+  @@index([id_cliente], map: "id_cliente")
+}
+
+model productos {
+  id_producto     Int               @id @default(autoincrement())
+  nombre_producto String?           @db.VarChar(50)
+  precio          Decimal?          @db.Decimal(10, 2)
+  detalle_pedidos detalle_pedidos[]
+}

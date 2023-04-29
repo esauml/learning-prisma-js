@@ -1,0 +1,64 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - "./data:/var/lib/mysql/:rw"
+      - "./sql:/docker-entrypoint-initdb.d/:rw"
+    container_name: mysql
+    networks:
+      - my_net
+
+  wait-for-db:
+    image: atkrad/wait4x:latest
+    depends_on:
+      - mysql
+    command: tcp mysql:3306 -t 120s -i 3000ms
+    networks:
+      - my_net
+
+  node:
+    build:
+      context: .
+    container_name: node
+    command: >
+      bash -c "
+        npm run prisma:migrate &&
+        npm run start
+      "
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      wait-for-db:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+      - myapp:/app
+    networks:
+      - my_net
+
+  primsa_studio:
+    image: node:lts-alpine
+    restart: always
+    ports:
+      - "5555:5555"
+    depends_on:
+      - node
+    volumes:
+      - myapp:/app
+    working_dir: /app
+    command: npx prisma studio
+    networks:
+      - my_net
+networks:
+  my_net:
+
+
+volumes:
+  myapp:
